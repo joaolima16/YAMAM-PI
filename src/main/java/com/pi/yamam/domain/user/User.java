@@ -50,6 +50,15 @@ public class User implements UserDetails {
     private UserRoles role;
 
 
+    
+    public User(String name, String cpf, String email, String password, UserStatus status, UserRoles role) {
+        this.name = name;
+        this.cpf = cpf;
+        this.email = email;
+        this.password = password;
+        this.status = status;
+        this.role = role;
+    }
     public User(String email, String password, UserRoles role){
         this.email = email;
         this.password = password;
