@@ -6,25 +6,20 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pi.yamam.domain.user.AuthenticationDTO;
-import com.pi.yamam.domain.user.LoginResponseDTO;
 import com.pi.yamam.domain.user.RegisterDTO;
 import com.pi.yamam.domain.user.User;
-import com.pi.yamam.infra.security.TokenService;
 import com.pi.yamam.repositories.UserRepository;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("auth")
-@RequiredArgsConstructor
 public class AuthenticationController {
 
     @Autowired
@@ -33,32 +28,21 @@ public class AuthenticationController {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private TokenService tokenService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @PostMapping("/teste")
+    @PostMapping("/login")
     public ResponseEntity login(@RequestBody @Valid AuthenticationDTO data) {
-        User user = userRepository.findByEmail(data.email()).orElseThrow(() -> new RuntimeException("User not found!"));
+        var usernamePassword = new UsernamePasswordAuthenticationToken(data.email(), data.password());
+        var auth = this.authenticationManager.authenticate(usernamePassword);
 
-        
-        if (passwordEncoder.matches(user.getPassword(), data.password())) {
-            System.out.println("passei aqui");
-            String token = tokenService.generateToken(user);
-            return ResponseEntity.ok(token);
-        }
-
-        return ResponseEntity.ok("teste");
+        return ResponseEntity.ok(auth);
     }
 
     @PostMapping("/register")
     public ResponseEntity register(@RequestBody @Valid RegisterDTO data) {
-      
+        if (this.userRepository.findByEmail(data.email()) != null)
+            return ResponseEntity.badRequest().build();
 
         String passEncripted = new BCryptPasswordEncoder().encode(data.password());
-        User newUser = new User(data.name(), data.cpf(), data.email(), passEncripted, data.userStatus(), data.role());
+        User newUser = new User(data.email(), passEncripted, data.role());
 
         this.userRepository.save(newUser);
         return ResponseEntity.ok(newUser);
